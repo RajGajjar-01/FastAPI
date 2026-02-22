@@ -78,7 +78,38 @@ def downgrade():
 
 ---
 
-## 4. Key Commands
+## 4. Autogenerate Migrations (The "Automatic" Approach)
+
+Autogenerate is one of Alembic's most powerful features. Instead of writing code manually, Alembic compares your **SQLAlchemy Models** with your **Real Database Schema** and writes the migration script for you.
+
+### Step 1: Enable it in `env.py`
+To enable autogenerate, Alembic needs a reference to your model's metadata. 
+In `alembic/env.py`, you must import your `Base` and set `target_metadata`.
+
+```python
+# 1. Import your Base (which has all your models attached)
+from models import Base 
+
+# 2. Assign the metadata so Alembic can "read" your models
+target_metadata = Base.metadata
+```
+
+### Step 2: Use the `--autogenerate` flag
+When creating a revision, simply add the flag:
+```bash
+alembic revision --autogenerate -m "Add description to company"
+```
+
+### Step 3: Review the Output
+Alembic is smart, but not perfect. It can miss:
+- Table renames (it might see a `DROP` and `CREATE` instead).
+- Custom constraints or specific Index types.
+- Changes to column names.
+**Always check the generated file before running `upgrade head`!**
+
+---
+
+## 5. Key Commands
 
 | Command | Description |
 | :--- | :--- |
@@ -87,14 +118,15 @@ def downgrade():
 | `alembic current` | Show the current revision level of the database. |
 | `alembic history` | Show the list of all migrations in chronological order. |
 | `alembic show <revision>` | Show details about a specific revision. |
+| `alembic stamp base` | Manually set the DB version to "zero" (use with caution). |
 
 ---
 
-## 5. Lessons Learned & Tips
+## 7. Lessons Learned & Tips
 
 1. **Transactional DDL**: Alembic wraps migrations in transactions (on supported DBs like Postgres), meaning if an upgrade fails halfway, it rolls back automatically.
 2. **Deterministic Versions**: Every migration has a unique hash (e.g., `2860183cdf8c`). Use these to target specific versions.
-3. **Always Write Downgrades**: A migration is only complete if it can be safely undone.
+3. **Always Write Downgrades**: A migration is only complete if it can be safely undone (Autogenerate does this for you!).
 4. **Order Matters**: Alembic uses a linked list (Parent -> Child). Ensure the `down_revision` in your files correctly points to the previous state.
 
 ---
